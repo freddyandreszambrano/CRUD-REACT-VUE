@@ -1,129 +1,204 @@
- import React from "react";
-import { useForm } from "../hooks/useForm";
+import React from "react";
+import {saveForm} from "../services/formService";
+import {useForm} from "../hooks/useForm";
 
-export function Formulario() {
-  const { form, errors, handleChange, validate } = useForm({
+const initialFormState = {
     dni: "",
     nombres: "",
     apellidos: "",
     fechaNacimiento: "",
     genero: "",
-    ciudad: ""
-  });
+    ciudad: "",
+};
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (validate()) {
-      console.log(form); // Aquí llamas a formService luego
-      alert("Formulario enviado!");
-    } else {
-      alert("Complete todos los campos correctamente");
-    }
-  };
+export function Formulario({onFormSaved}) {
+    const {
+        form,
+        errors,
+        isSubmitting,
+        handleChange,
+        validate,
+        resetForm,
+        setIsSubmitting,
+        setErrors
+    } = useForm(initialFormState);
 
-  return (
-    <form onSubmit={handleSubmit} className="p-4 shadow rounded bg-light">
-      <h3 className="mb-4 text-center text-primary">Registro de Usuario</h3>
+    const handleSubmit = async (e) => {
+        e.preventDefault();
 
-      <div className="mb-3">
-        <label className="form-label">DNI</label>
-        <input
-          type="text"
-          name="dni"
-          className={`form-control ${errors.dni ? "is-invalid" : ""}`}
-          value={form.dni}
-          onChange={handleChange}
-          placeholder="Ingrese DNI"
-        />
-        <div className="invalid-feedback">{errors.dni}</div>
-      </div>
+        // Validar formulario
+        if (!validate()) {
+            return;
+        }
 
-      <div className="mb-3">
-        <label className="form-label">Nombres</label>
-        <input
-          type="text"
-          name="nombres"
-          className={`form-control ${errors.nombres ? "is-invalid" : ""}`}
-          value={form.nombres}
-          onChange={handleChange}
-          placeholder="Ingrese nombres"
-        />
-        <div className="invalid-feedback">{errors.nombres}</div>
-      </div>
+        setIsSubmitting(true);
 
-      <div className="mb-3">
-        <label className="form-label">Apellidos</label>
-        <input
-          type="text"
-          name="apellidos"
-          className={`form-control ${errors.apellidos ? "is-invalid" : ""}`}
-          value={form.apellidos}
-          onChange={handleChange}
-          placeholder="Ingrese apellidos"
-        />
-        <div className="invalid-feedback">{errors.apellidos}</div>
-      </div>
+        try {
+            await saveForm(form);
+            alert("✅ Formulario guardado exitosamente!");
+            resetForm();
 
-      <div className="mb-3">
-        <label className="form-label">Fecha de Nacimiento</label>
-        <input
-          type="date"
-          name="fechaNacimiento"
-          className={`form-control ${errors.fechaNacimiento ? "is-invalid" : ""}`}
-          value={form.fechaNacimiento}
-          onChange={handleChange}
-        />
-        <div className="invalid-feedback">{errors.fechaNacimiento}</div>
-      </div>
+            // Notificar al componente padre para recargar la lista
+            if (onFormSaved) {
+                onFormSaved();
+            }
+        } catch (error) {
+            alert(`❌ Error: ${error.message}`);
+            setErrors({submit: error.message});
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
-      <div className="mb-3">
-        <label className="form-label">Género</label>
-        <div>
-          <div className="form-check form-check-inline">
-            <input
-              className="form-check-input"
-              type="radio"
-              name="genero"
-              value="M"
-              checked={form.genero === "M"}
-              onChange={handleChange}
-            />
-            <label className="form-check-label">Masculino</label>
-          </div>
-          <div className="form-check form-check-inline">
-            <input
-              className="form-check-input"
-              type="radio"
-              name="genero"
-              value="F"
-              checked={form.genero === "F"}
-              onChange={handleChange}
-            />
-            <label className="form-check-label">Femenino</label>
-          </div>
+    return (
+        <div className="card shadow">
+            <div className="card-header bg-primary text-white">
+                <h4 className="mb-0">📝 Registro de Formulario</h4>
+            </div>
+            <div className="card-body">
+                <form onSubmit={handleSubmit}>
+                    <div className="mb-3">
+                        <label className="form-label fw-bold">DNI/Cédula *</label>
+                        <input
+                            className={`form-control ${errors.dni ? "is-invalid" : ""}`}
+                            placeholder="Ingrese DNI"
+                            name="dni"
+                            value={form.dni}
+                            onChange={handleChange}
+                            disabled={isSubmitting}
+                        />
+                        {errors.dni && (
+                            <div className="invalid-feedback">{errors.dni}</div>
+                        )}
+                    </div>
+
+                    <div className="mb-3">
+                        <label className="form-label fw-bold">Nombres *</label>
+                        <input
+                            className={`form-control ${errors.nombres ? "is-invalid" : ""}`}
+                            placeholder="Ingrese nombres"
+                            name="nombres"
+                            value={form.nombres}
+                            onChange={handleChange}
+                            disabled={isSubmitting}
+                        />
+                        {errors.nombres && (
+                            <div className="invalid-feedback">{errors.nombres}</div>
+                        )}
+                    </div>
+
+                    <div className="mb-3">
+                        <label className="form-label fw-bold">Apellidos *</label>
+                        <input
+                            className={`form-control ${errors.apellidos ? "is-invalid" : ""}`}
+                            placeholder="Ingrese apellidos"
+                            name="apellidos"
+                            value={form.apellidos}
+                            onChange={handleChange}
+                            disabled={isSubmitting}
+                        />
+                        {errors.apellidos && (
+                            <div className="invalid-feedback">{errors.apellidos}</div>
+                        )}
+                    </div>
+
+                    <div className="mb-3">
+                        <label className="form-label fw-bold">Fecha de Nacimiento *</label>
+                        <input
+                            type="date"
+                            className={`form-control ${errors.fechaNacimiento ? "is-invalid" : ""}`}
+                            name="fechaNacimiento"
+                            value={form.fechaNacimiento}
+                            onChange={handleChange}
+                            disabled={isSubmitting}
+                            max={new Date().toISOString().split('T')[0]}
+                        />
+                        {errors.fechaNacimiento && (
+                            <div className="invalid-feedback">{errors.fechaNacimiento}</div>
+                        )}
+                    </div>
+
+                    <div className="mb-3">
+                        <label className="form-label fw-bold d-block">Género *</label>
+                        <div className="form-check form-check-inline">
+                            <input
+                                className="form-check-input"
+                                type="radio"
+                                name="genero"
+                                id="generoM"
+                                value="M"
+                                checked={form.genero === "M"}
+                                onChange={handleChange}
+                                disabled={isSubmitting}
+                            />
+                            <label className="form-check-label" htmlFor="generoM">
+                                Masculino
+                            </label>
+                        </div>
+                        <div className="form-check form-check-inline">
+                            <input
+                                className="form-check-input"
+                                type="radio"
+                                name="genero"
+                                id="generoF"
+                                value="F"
+                                checked={form.genero === "F"}
+                                onChange={handleChange}
+                                disabled={isSubmitting}
+                            />
+                            <label className="form-check-label" htmlFor="generoF">
+                                Femenino
+                            </label>
+                        </div>
+                        {errors.genero && (
+                            <div className="text-danger small">{errors.genero}</div>
+                        )}
+                    </div>
+
+                    <div className="mb-3">
+                        <label className="form-label fw-bold">Ciudad *</label>
+                        <select
+                            name="ciudad"
+                            className={`form-select ${errors.ciudad ? "is-invalid" : ""}`}
+                            value={form.ciudad}
+                            onChange={handleChange}
+                            disabled={isSubmitting}
+                        >
+                            <option value="">Seleccione Ciudad</option>
+                            <option value="Quito">Quito</option>
+                            <option value="Guayaquil">Guayaquil</option>
+                            <option value="Cuenca">Cuenca</option>
+                            <option value="Milagro">Milagro</option>
+                            <option value="Manta">Manta</option>
+                            <option value="Ambato">Ambato</option>
+                        </select>
+                        {errors.ciudad && (
+                            <div className="invalid-feedback">{errors.ciudad}</div>
+                        )}
+                    </div>
+
+                    {errors.submit && (
+                        <div className="alert alert-danger" role="alert">
+                            {errors.submit}
+                        </div>
+                    )}
+
+                    <button
+                        type="submit"
+                        className="btn btn-primary w-100"
+                        disabled={isSubmitting}
+                    >
+                        {isSubmitting ? (
+                            <>
+                                <span className="spinner-border spinner-border-sm me-2"></span>
+                                Guardando...
+                            </>
+                        ) : (
+                            "💾 Guardar Formulario"
+                        )}
+                    </button>
+                </form>
+            </div>
         </div>
-        {errors.genero && <div className="text-danger">{errors.genero}</div>}
-      </div>
-
-      <div className="mb-3">
-        <label className="form-label">Ciudad</label>
-        <select
-          name="ciudad"
-          className={`form-select ${errors.ciudad ? "is-invalid" : ""}`}
-          value={form.ciudad}
-          onChange={handleChange}
-        >
-          <option value="">Seleccione Ciudad</option>
-          <option value="Quito">Quito</option>
-          <option value="Guayaquil">Guayaquil</option>
-          <option value="Cuenca">Cuenca</option>
-        </select>
-        <div className="invalid-feedback">{errors.ciudad}</div>
-      </div>
-
-      <button type="submit" className="btn btn-primary w-100 mt-3">
-        Enviar
-      </button>
-    </form>
-  );
+    );
 }
